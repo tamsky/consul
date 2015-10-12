@@ -24,7 +24,7 @@ type consulFSM struct {
 	path      string
 	stateNew  *state.StateStore
 	state     *StateStore
-	gc        *TombstoneGC
+	gc        *state.TombstoneGC
 }
 
 // consulSnapshot is used to provide a snapshot of the current
@@ -43,9 +43,9 @@ type snapshotHeader struct {
 }
 
 // NewFSMPath is used to construct a new FSM with a blank state
-func NewFSM(gc *TombstoneGC, path string, logOutput io.Writer) (*consulFSM, error) {
+func NewFSM(gc *state.TombstoneGC, path string, logOutput io.Writer) (*consulFSM, error) {
 	// Create the state store.
-	stateNew, err := state.NewStateStore()
+	stateNew, err := state.NewStateStore(gc)
 	if err != nil {
 		return nil, err
 	}

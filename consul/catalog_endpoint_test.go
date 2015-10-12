@@ -266,7 +266,9 @@ func TestCatalogListNodes(t *testing.T) {
 	testutil.WaitForLeader(t, client.Call, "dc1")
 
 	// Just add a node
-	s1.fsm.State().EnsureNode(1, structs.Node{Node: "foo", Address: "127.0.0.1"})
+	if err := s1.fsm.StateNew().EnsureNode(1, &structs.Node{Node: "foo", Address: "127.0.0.1"}); err != nil {
+		t.Fatalf("err: %v", err)
+	}
 
 	testutil.WaitForResult(func() (bool, error) {
 		client.Call("Catalog.ListNodes", &args, &out)
@@ -316,12 +318,16 @@ func TestCatalogListNodes_StaleRaad(t *testing.T) {
 		client = client1
 
 		// Inject fake data on the follower!
-		s1.fsm.State().EnsureNode(1, structs.Node{Node: "foo", Address: "127.0.0.1"})
+		if err := s1.fsm.StateNew().EnsureNode(1, &structs.Node{Node: "foo", Address: "127.0.0.1"}); err != nil {
+			t.Fatalf("err: %v", err)
+		}
 	} else {
 		client = client2
 
 		// Inject fake data on the follower!
-		s2.fsm.State().EnsureNode(1, structs.Node{Node: "foo", Address: "127.0.0.1"})
+		if err := s2.fsm.StateNew().EnsureNode(1, &structs.Node{Node: "foo", Address: "127.0.0.1"}); err != nil {
+			t.Fatalf("err: %v", err)
+		}
 	}
 
 	args := structs.DCSpecificRequest{
@@ -457,7 +463,9 @@ func BenchmarkCatalogListNodes(t *testing.B) {
 	defer client.Close()
 
 	// Just add a node
-	s1.fsm.State().EnsureNode(1, structs.Node{Node: "foo", Address: "127.0.0.1"})
+	if err := s1.fsm.StateNew().EnsureNode(1, &structs.Node{Node: "foo", Address: "127.0.0.1"}); err != nil {
+		t.Fatalf("err: %v", err)
+	}
 
 	args := structs.DCSpecificRequest{
 		Datacenter: "dc1",
@@ -489,8 +497,12 @@ func TestCatalogListServices(t *testing.T) {
 	testutil.WaitForLeader(t, client.Call, "dc1")
 
 	// Just add a node
-	s1.fsm.State().EnsureNode(1, structs.Node{Node: "foo", Address: "127.0.0.1"})
-	s1.fsm.State().EnsureService(2, "foo", &structs.NodeService{ID: "db", Service: "db", Tags: []string{"primary"}, Address: "127.0.0.1", Port: 5000})
+	if err := s1.fsm.StateNew().EnsureNode(1, &structs.Node{Node: "foo", Address: "127.0.0.1"}); err != nil {
+		t.Fatalf("err: %v", err)
+	}
+	if err := s1.fsm.StateNew().EnsureService(2, "foo", &structs.NodeService{ID: "db", Service: "db", Tags: []string{"primary"}, Address: "127.0.0.1", Port: 5000}); err != nil {
+		t.Fatalf("err: %v", err)
+	}
 
 	if err := client.Call("Catalog.ListServices", &args, &out); err != nil {
 		t.Fatalf("err: %v", err)
@@ -540,11 +552,16 @@ func TestCatalogListServices_Blocking(t *testing.T) {
 	args.MaxQueryTime = time.Second
 
 	// Async cause a change
+	idx := out.Index
 	start := time.Now()
 	go func() {
 		time.Sleep(100 * time.Millisecond)
-		s1.fsm.State().EnsureNode(1, structs.Node{Node: "foo", Address: "127.0.0.1"})
-		s1.fsm.State().EnsureService(2, "foo", &structs.NodeService{ID: "db", Service: "db", Tags: []string{"primary"}, Address: "127.0.0.1", Port: 5000})
+		if err := s1.fsm.StateNew().EnsureNode(idx+1, &structs.Node{Node: "foo", Address: "127.0.0.1"}); err != nil {
+			t.Fatalf("err: %v", err)
+		}
+		if err := s1.fsm.StateNew().EnsureService(idx+2, "foo", &structs.NodeService{ID: "db", Service: "db", Tags: []string{"primary"}, Address: "127.0.0.1", Port: 5000}); err != nil {
+			t.Fatalf("err: %v", err)
+		}
 	}()
 
 	// Re-run the query
@@ -559,7 +576,7 @@ func TestCatalogListServices_Blocking(t *testing.T) {
 	}
 
 	// Check the indexes
-	if out.Index != 2 {
+	if out.Index != idx+2 {
 		t.Fatalf("bad: %v", out)
 	}
 
@@ -624,8 +641,12 @@ func TestCatalogListServices_Stale(t *testing.T) {
 	var out structs.IndexedServices
 
 	// Inject a fake service
-	s1.fsm.State().EnsureNode(1, structs.Node{Node: "foo", Address: "127.0.0.1"})
-	s1.fsm.State().EnsureService(2, "foo", &structs.NodeService{ID: "db", Service: "db", Tags: []string{"primary"}, Address: "127.0.0.1", Port: 5000})
+	if err := s1.fsm.StateNew().EnsureNode(1, &structs.Node{Node: "foo", Address: "127.0.0.1"}); err != nil {
+		t.Fatalf("err: %v", err)
+	}
+	if err := s1.fsm.StateNew().EnsureService(2, "foo", &structs.NodeService{ID: "db", Service: "db", Tags: []string{"primary"}, Address: "127.0.0.1", Port: 5000}); err != nil {
+		t.Fatalf("err: %v", err)
+	}
 
 	// Run the query, do not wait for leader!
 	if err := client.Call("Catalog.ListServices", &args, &out); err != nil {
@@ -665,8 +686,12 @@ func TestCatalogListServiceNodes(t *testing.T) {
 	testutil.WaitForLeader(t, client.Call, "dc1")
 
 	// Just add a node
-	s1.fsm.State().EnsureNode(1, structs.Node{Node: "foo", Address: "127.0.0.1"})
-	s1.fsm.State().EnsureService(2, "foo", &structs.NodeService{ID: "db", Service: "db", Tags: []string{"primary"}, Address: "127.0.0.1", Port: 5000})
+	if err := s1.fsm.StateNew().EnsureNode(1, &structs.Node{Node: "foo", Address: "127.0.0.1"}); err != nil {
+		t.Fatalf("err: %v", err)
+	}
+	if err := s1.fsm.StateNew().EnsureService(2, "foo", &structs.NodeService{ID: "db", Service: "db", Tags: []string{"primary"}, Address: "127.0.0.1", Port: 5000}); err != nil {
+		t.Fatalf("err: %v", err)
+	}
 
 	if err := client.Call("Catalog.ServiceNodes", &args, &out); err != nil {
 		t.Fatalf("err: %v", err)
@@ -708,9 +733,15 @@ func TestCatalogNodeServices(t *testing.T) {
 	testutil.WaitForLeader(t, client.Call, "dc1")
 
 	// Just add a node
-	s1.fsm.State().EnsureNode(1, structs.Node{Node: "foo", Address: "127.0.0.1"})
-	s1.fsm.State().EnsureService(2, "foo", &structs.NodeService{ID: "db", Service: "db", Tags: []string{"primary"}, Address: "127.0.0.1", Port: 5000})
-	s1.fsm.State().EnsureService(3, "foo", &structs.NodeService{ID: "web", Service: "web", Tags: nil, Address: "127.0.0.1", Port: 80})
+	if err := s1.fsm.StateNew().EnsureNode(1, &structs.Node{Node: "foo", Address: "127.0.0.1"}); err != nil {
+		t.Fatalf("err: %v", err)
+	}
+	if err := s1.fsm.StateNew().EnsureService(2, "foo", &structs.NodeService{ID: "db", Service: "db", Tags: []string{"primary"}, Address: "127.0.0.1", Port: 5000}); err != nil {
+		t.Fatalf("err: %v", err)
+	}
+	if err := s1.fsm.StateNew().EnsureService(3, "foo", &structs.NodeService{ID: "web", Service: "web", Tags: nil, Address: "127.0.0.1", Port: 80}); err != nil {
+		t.Fatalf("err: %v", err)
+	}
 
 	if err := client.Call("Catalog.NodeServices", &args, &out); err != nil {
 		t.Fatalf("err: %v", err)
