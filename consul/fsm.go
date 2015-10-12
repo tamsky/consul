@@ -78,7 +78,7 @@ func (c *consulFSM) Close() error {
 	return c.state.Close()
 }
 
-// TODO(slackpad)
+// StateNew is used to return a handle to the current state
 func (c *consulFSM) StateNew() *state.StateStore {
 	return c.stateNew
 }
