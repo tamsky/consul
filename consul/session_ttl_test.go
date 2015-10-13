@@ -18,7 +18,7 @@ func TestInitializeSessionTimers(t *testing.T) {
 
 	testutil.WaitForLeader(t, s1.RPC, "dc1")
 
-	state := s1.fsm.StateNew()
+	state := s1.fsm.State()
 	if err := state.EnsureNode(1, &structs.Node{Node: "foo", Address: "127.0.0.1"}); err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -58,7 +58,7 @@ func TestResetSessionTimer_Fault(t *testing.T) {
 	}
 
 	// Create a session
-	state := s1.fsm.StateNew()
+	state := s1.fsm.State()
 	if err := state.EnsureNode(1, &structs.Node{Node: "foo", Address: "127.0.0.1"}); err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -92,7 +92,7 @@ func TestResetSessionTimer_NoTTL(t *testing.T) {
 	testutil.WaitForLeader(t, s1.RPC, "dc1")
 
 	// Create a session
-	state := s1.fsm.StateNew()
+	state := s1.fsm.State()
 	if err := state.EnsureNode(1, &structs.Node{Node: "foo", Address: "127.0.0.1"}); err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -205,7 +205,7 @@ func TestInvalidateSession(t *testing.T) {
 	testutil.WaitForLeader(t, s1.RPC, "dc1")
 
 	// Create a session
-	state := s1.fsm.StateNew()
+	state := s1.fsm.State()
 	if err := state.EnsureNode(1, &structs.Node{Node: "foo", Address: "127.0.0.1"}); err != nil {
 		t.Fatalf("err: %s", err)
 	}
