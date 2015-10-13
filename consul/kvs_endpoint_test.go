@@ -35,7 +35,7 @@ func TestKVS_Apply(t *testing.T) {
 
 	// Verify
 	state := s1.fsm.State()
-	d, err := state.KVSGet("test")
+	_, d, err := state.KVSGet("test")
 	if err != nil {
 		t.Fatalf("err: %v", err)
 	}
@@ -57,7 +57,7 @@ func TestKVS_Apply(t *testing.T) {
 	}
 
 	// Verify
-	d, err = state.KVSGet("test")
+	_, d, err = state.KVSGet("test")
 	if err != nil {
 		t.Fatalf("err: %v", err)
 	}
@@ -276,6 +276,18 @@ func TestKVSEndpoint_List(t *testing.T) {
 		if d.Value != nil {
 			t.Fatalf("bad: %v", d)
 		}
+	}
+
+	// Try listing a nonexistent prefix
+	getR.Key = "/nope"
+	if err := client.Call("KVS.List", &getR, &dirent); err != nil {
+		t.Fatalf("err: %v", err)
+	}
+	if dirent.Index == 0 {
+		t.Fatalf("Bad: %v", dirent)
+	}
+	if len(dirent.Entries) != 0 {
+		t.Fatalf("Bad: %v", dirent.Entries)
 	}
 }
 
@@ -511,6 +523,18 @@ func TestKVSEndpoint_ListKeys(t *testing.T) {
 		t.Fatalf("Bad: %v", dirent.Keys)
 	}
 	if dirent.Keys[2] != "/test/sub/" {
+		t.Fatalf("Bad: %v", dirent.Keys)
+	}
+
+	// Try listing a nonexistent prefix
+	getR.Prefix = "/nope"
+	if err := client.Call("KVS.ListKeys", &getR, &dirent); err != nil {
+		t.Fatalf("err: %v", err)
+	}
+	if dirent.Index == 0 {
+		t.Fatalf("Bad: %v", dirent)
+	}
+	if len(dirent.Keys) != 0 {
 		t.Fatalf("Bad: %v", dirent.Keys)
 	}
 }
